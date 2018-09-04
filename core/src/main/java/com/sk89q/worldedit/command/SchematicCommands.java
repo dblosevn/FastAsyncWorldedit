@@ -672,6 +672,8 @@ public class SchematicCommands extends MethodCommands {
 	            					JsonParser parser = new JsonParser();
 	            					JsonObject o = parser.parse(content.toString()).getAsJsonObject();
 	            					names.put(uuid, o.get("name").getAsString());
+	                    		} else {
+	                                msg.text(color + name);
 	                    		}
 	                    	}
 	    					msg.text(color + names.get(uuid));
