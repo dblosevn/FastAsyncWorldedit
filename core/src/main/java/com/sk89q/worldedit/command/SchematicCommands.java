@@ -32,6 +32,8 @@ import com.boydti.fawe.object.schematic.StructureFormat;
 import com.boydti.fawe.object.schematic.visualizer.SchemVis;
 import com.boydti.fawe.util.MainUtil;
 import com.boydti.fawe.util.chat.Message;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
@@ -57,7 +59,12 @@ import com.sk89q.worldedit.util.io.file.FilenameException;
 import com.sk89q.worldedit.world.registry.WorldData;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.HttpsURLConnection;
+
+import org.mozilla.javascript.optimizer.OptRuntime.GeneratorState;
+
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -79,7 +86,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 @Command(aliases = {"schematic", "schem", "/schematic", "/schem", "clipboard", "/clipboard"}, desc = "Commands that work with schematic files")
 public class SchematicCommands extends MethodCommands {
-
+	private HashMap<UUID, String> names = new HashMap<UUID, String>();
     private static final Logger log = Logger.getLogger(SchematicCommands.class.getCanonicalName());
 
     /**
@@ -643,10 +650,37 @@ public class SchematicCommands extends MethodCommands {
                     }
                     if (!isDir) msg.text("&7[&cX&7]").suggest("/" + delete + " " + relFilePath).tooltip("Delete");
                     else if (hasShow) msg.text("&7[&3O&7]").command(showCmd + " " + args.getJoinedStrings(0) + " " + relFilePath).tooltip("Show");
-                    msg.text(color + name);
                     if (isDir) {
+                    	String parts[] = relFilePath.split("/");
+                		try {
+	                    	UUID uuid = UUID.fromString(parts[parts.length - 1]);
+	                    	if (!names.containsKey(uuid)) {
+	                    		URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString().toLowerCase().replaceAll("-", ""));
+	                    		HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
+	                    		con.setRequestMethod("GET");
+	                    		con.connect();
+	                    		if (con.getResponseCode() == 200) {
+	                    			BufferedReader in = new BufferedReader(
+	                    					  new InputStreamReader(con.getInputStream()));
+	            					String inputLine;
+	            					StringBuffer content = new StringBuffer();
+	            					while ((inputLine = in.readLine()) != null) {
+	            					    content.append(inputLine);
+	            					}
+	            					in.close();
+	            					con.disconnect();
+	            					JsonParser parser = new JsonParser();
+	            					JsonObject o = parser.parse(content.toString()).getAsJsonObject();
+	            					names.put(uuid, o.get("name").getAsString());
+	                    		}
+	                    	}
+	    					msg.text(color + names.get(uuid));
+                		} catch (IllegalArgumentException | IOException e) {
+                            msg.text(color + name);
+                		}
                         msg.command(list + " " + relFilePath).tooltip("List");
                     } else {
+                        msg.text(color + name);
                         msg.command(loadSingle + " " + relFilePath).tooltip("Load");
                     }
                 } else {

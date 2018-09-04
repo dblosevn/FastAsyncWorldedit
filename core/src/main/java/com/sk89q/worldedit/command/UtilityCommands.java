@@ -727,9 +727,7 @@ public class UtilityCommands extends MethodCommands {
                         listGlobal = true;
                         break;
                     case "all":
-                        listMine = true;
-                        listGlobal = true;
-                        break;
+                    	arg = "../";
                     default:
                         if (arg.endsWith("/") || arg.endsWith(File.separator)) {
                             arg = arg.replace("/", File.separator);
